@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persons - Project Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="index.html">PROJECT MANAGEMENT</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="persons.html">PERSONS</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="tasks.html">TASKS</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="projects.html">PROJECTS</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-3" style="margin-top: 20px; margin-bottom: 100px">
+    <div class="row mb-3" style="margin-top: 30px">
+        <div class="col-md-6">
+            <input type="text" id="searchPerson" class="form-control mb-2" placeholder="Search by Person Name">
+        </div>
+
+        <div class="col-md-6">
+            <input type="text" id="searchProject" class="form-control mb-2" placeholder="Search by Project Name">
+        </div>
+    </div>
+
+    <h2 style="margin-top: 30px">Persons</h2>
+    <table class="table" id="personsTable">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+        </tr>
+        </thead>
+        <tbody>
+
+        </tbody>
+    </table>
+
+    <h2 style="margin-top: 30px;">Tasks</h2>
+    <table class="table" id="tasksTable">
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Assigned To</th>
+            <th>Project</th>
+        </tr>
+        </thead>
+        <tbody>
+
+        </tbody>
+    </table>
+
+    <h2 style="margin-top: 30px">Projects</h2>
+    <table class="table" id="projectsTable" >
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+
+        </tbody>
+    </table>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchData();
+
+        document.getElementById('searchPerson').addEventListener('input', function() {
+            filterPersons(this.value);
+        });
+
+        document.getElementById('searchProject').addEventListener('input', function() {
+            filterProjects(this.value);
+        });
+    });
+
+    function fetchData() {
+        fetchPersons();
+        fetchTasks();
+        fetchProjects();
+    }
+
+    function fetchPersons() {
+        fetch('http://localhost:8080/api/persons')
+            .then(response => response.json())
+            .then(persons => {
+                window.persons = persons; // Store globally for filtering
+                populatePersons(persons);
+            });
+    }
+
+    function fetchTasks() {
+        fetch('http://localhost:8080/api/tasks')
+            .then(response => response.json())
+            .then(tasks => {
+                window.tasks = tasks; // Store globally for filtering
+                populateTasks(tasks);
+            });
+    }
+
+    function fetchProjects() {
+        fetch('http://localhost:8080/api/projects')
+            .then(response => response.json())
+            .then(projects => {
+                window.projects = projects; // Store globally for filtering
+                populateProjects(projects);
+            });
+    }
+
+    function populatePersons(persons) {
+        const table = document.getElementById('personsTable').getElementsByTagName('tbody')[0];
+        table.innerHTML = '';
+        persons.forEach(person => {
+            const row = table.insertRow();
+            row.insertCell(0).textContent = person.name;
+            row.insertCell(1).textContent = person.email;
+        });
+    }
+
+    function populateTasks(tasks) {
+        const table = document.getElementById('tasksTable').getElementsByTagName('tbody')[0];
+        table.innerHTML = '';
+        tasks.forEach(task => {
+            const row = table.insertRow();
+            row.insertCell(0).textContent = task.title;
+            row.insertCell(1).textContent = task.description;
+            row.insertCell(2).textContent = task.status;
+            row.insertCell(3).textContent = task.assignedTo ? task.assignedTo.name : 'Unassigned';
+            row.insertCell(4).textContent = task.project ? task.project.name : 'No name';
+        });
+    }
+
+    function populateProjects(projects) {
+        const table = document.getElementById('projectsTable').getElementsByTagName('tbody')[0];
+        table.innerHTML = '';
+        projects.forEach(project => {
+            const row = table.insertRow();
+            row.insertCell(0).textContent = project.name;
+            row.insertCell(1).textContent = project.description;
+        });
+    }
+
+    function filterPersons(searchText) {
+        const filteredPersons = window.persons.filter(person => person.name.toLowerCase().includes(searchText.toLowerCase()));
+        populatePersons(filteredPersons);
+        filterTasksForPerson(searchText);
+    }
+
+    function filterProjects(searchText) {
+        const filteredProjects = window.projects.filter(project => project.name.toLowerCase().includes(searchText.toLowerCase()));
+        populateProjects(filteredProjects);
+        filterTasksForProject(filteredProjects);
+    }
+
+    function filterTasksForPerson(personName) {
+        if (!personName) {
+            populateTasks(window.tasks);
+            return;
+        }
+        const filteredTasks = window.tasks.filter(task => task.assignedTo && task.assignedTo.name.toLowerCase().includes(personName.toLowerCase()));
+        populateTasks(filteredTasks);
+    }
+
+    function filterTasksForProject(filteredProjects) {
+        const projectNames = filteredProjects.map(p => p.name);
+        const filteredTasks = window.tasks.filter(task => task.project && projectNames.includes(task.project.name));
+        populateTasks(filteredTasks);
+    }
+
+</script>
+</body>
+</html>
